@@ -18,31 +18,55 @@ if __name__ == "__main__":
 	GPIO.setup(17,GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 	pygame.mixer.init()
+	#print(all_music_files[0])
 	index = 0
-	playing = False
+	playing = 'nothing'
 	all_music_files_deq = deque([])
 	while True:
-		if (not GPIO.input(4)): # Start playing, from a random piece
+		time.sleep(0.3)
+		if (not GPIO.input(4)): # Start playing, from a random piece or stop
+			if playing != 'nothing':
+				print("Stopping music")
+				pygame.mixer.music.stop()
+				playing = 'nothing'
+				continue
+
 			index = 0
-			pygame.mixer.music.stop()
 			all_music_files_deq = deque(all_music_files)
 			all_music_files_deq.rotate(random.randint(0, len(all_music_files) - 1))	
+			print("DETECTED PLAY, index = %d. First song: %s" % (index, all_music_files_deq[0]))
 
-			playing = True
+			playing = 'music'
 			pygame.mixer.music.load(all_music_files_deq[index])
 			pygame.mixer.music.play()
-		elif (not GPIO.input(17)): # Stop playing
-			pygame.mixer.music.stop()
-			playing = False
-		elif playing:
+		elif (not GPIO.input(17)): # Play white noise
+			print("DETECTED STOP, index = %d" % index)
+			if playing != 'nothing':
+				print("Stopping noise")
+				pygame.mixer.music.stop()
+				playing = 'nothing'
+				continue
+			pygame.mixer.music.load(config.white_noise_file)
+			pygame.mixer.music.set_volume(1)
+			pygame.mixer.music.play()
+			playing = 'noise'
+		elif playing == 'music':
 			if not pygame.mixer.music.get_busy():
 				index += 1
 				if index == len(all_music_files_deq):
-					playing = False
+					playing = 'nothing'
 					index = 0
 				else:
 					pygame.mixer.music.load(all_music_files_deq[index])
 					pygame.mixer.music.play()
-		time.sleep(1)
+		elif playing == 'noise':
+			if not pygame.mixer.music.get_busy():
+				print("Continuing noise")
+#				pygame.mixer.music.load(config.white_noise_file)
+				pygame.mixer.music.set_volume(1)
+				pygame.mixer.music.play()
+
+
+#  time.sleep(5)
 
 
